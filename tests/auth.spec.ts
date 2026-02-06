@@ -31,3 +31,21 @@ test('register a user', async ({ page }) => {
   await page.getByText('The web\'s best pizza', { exact: true }).click();
   await page.getByText('JWT Pizza', { exact: true }).click();
 });
+
+test('login', async ({ page }) => {
+  await page.goto('/');
+  expect(await page.title()).toBe('JWT Pizza');
+
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('ellagriffioen@test.com');
+  await page.getByRole('textbox', { name: 'Password' }).click();
+  await page.getByRole('textbox', { name: 'Password' }).fill('123');
+  await page.getByRole('button', { name: 'Login' }).click();
+  await page.getByRole('link', { name: 'E', exact: true }).click();
+  await page.getByText('Your pizza kitchen').click();
+  await page.getByRole('img', { name: 'Employee stock photo' }).click();
+  await page.getByText('Ella', { exact: true }).click();
+  await page.getByText('ellagriffioen@test.com').click();
+  await page.getByText('diner', { exact: true }).click();
+});
