@@ -66,7 +66,8 @@ async function basicInit(page: Page) {
   });
 
   // Standard franchises and stores
-  await page.route(/\/api\/franchise(\?.*)?$/, async (route) => {
+  //await page.route(/\/api\/franchise(\?.*)?$/, async (route) => {
+  await page.route(/\/api\/franchise(\/\d+)?(\?.*)?$/, async (route) => {
     const req = route.request();
     const method = req.method();
     if (method==='GET') {
@@ -87,6 +88,21 @@ async function basicInit(page: Page) {
         };
         expect(route.request().method()).toBe('GET');
         await route.fulfill({ json: franchiseRes });
+    }
+    if (method === 'DELETE') {
+        const authHeader = req.headers()['authorization'];
+        expect(authHeader).toMatch(/^Bearer\s.+/);
+
+        const url = new URL(req.url());
+        const match = url.pathname.match(/\/api\/franchise\/(\d+)/);
+        expect(match).not.toBeNull();
+
+        const franchiseId = Number(match![1]);
+        expect(franchiseId).toBeGreaterThan(0);
+
+        await route.fulfill({
+            json: { message: 'franchise deleted' },
+        });
     }
     if(method==='POST') {
         const authHeader = req.headers()['authorization'];
@@ -206,5 +222,22 @@ test('create franchise', async ({ page }) => {
   await expect(page.getByText('Create franchise', { exact: true })).toBeVisible();
   await expect(page.getByText('homeadmin-dashboardcreate-')).toBeVisible();
   await page.getByRole('button', { name: 'Create' }).click();
+  await expect(page.getByRole('heading', { name: 'Franchises' })).toBeVisible();
+});
+
+test('delete franchise', async ({ page }) => {
+  await basicInit(page);
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('a');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+
+  await page.getByRole('link', { name: 'Admin' }).click();
+  await page.getByRole('row', { name: 'LotaPizza Close' }).getByRole('button').click();
+  await expect(page.getByText('Sorry to see you go')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Close' })).toBeVisible();
+  await expect(page.getByText('homeadmin-dashboardclose-')).toBeVisible();
+  await page.getByRole('button', { name: 'Close' }).click();
   await expect(page.getByRole('heading', { name: 'Franchises' })).toBeVisible();
 });
