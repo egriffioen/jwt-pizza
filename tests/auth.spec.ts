@@ -58,19 +58,33 @@ async function basicInit(page: Page) {
 
   // Authorize login for the given user
   await page.route('*/**/api/auth', async (route) => {
-    const loginReq = route.request().postDataJSON();
-    const user = validUsers[loginReq.email];
-    if (!user || user.password !== loginReq.password) {
-      await route.fulfill({ status: 401, json: { error: 'Unauthorized' } });
-      return;
+    const req = route.request();
+    const method = req.method();
+    if (method === 'PUT') {
+      const loginReq = route.request().postDataJSON();
+      const user = validUsers[loginReq.email];
+      if (!user || user.password !== loginReq.password) {
+        await route.fulfill({ status: 401, json: { error: 'Unauthorized' } });
+        return;
+      }
+      loggedInUser = validUsers[loginReq.email];
+      const loginRes = {
+        user: loggedInUser,
+        token: 'abcdef',
+      };
+      expect(route.request().method()).toBe('PUT');
+      await route.fulfill({ json: loginRes });
     }
-    loggedInUser = validUsers[loginReq.email];
-    const loginRes = {
-      user: loggedInUser,
-      token: 'abcdef',
-    };
-    expect(route.request().method()).toBe('PUT');
-    await route.fulfill({ json: loginRes });
+    if (method === 'DELETE') {
+      const authHeader = req.headers()['authorization'];
+      expect(authHeader).toMatch(/^Bearer\s.+/);
+
+      loggedInUser = undefined;
+
+      await route.fulfill({
+        json: { message: 'logout successful' },
+      });
+    }
   });
 
   // Return the currently logged in user
@@ -176,4 +190,20 @@ test('purchase with login', async ({ page }) => {
 
   // Check balance
   await expect(page.getByText('0.008')).toBeVisible();
+});
+
+test('logout clears session', async ({ page }) => {
+  await basicInit(page);
+
+  // Login
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('d@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('a');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  // Logout
+  await page.getByRole('link', { name: 'Logout' }).click();
+
+  // UI reflects logout
+  await expect(page.getByRole('link', { name: 'Login' })).toBeVisible();
 });
