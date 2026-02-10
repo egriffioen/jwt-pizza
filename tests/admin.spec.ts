@@ -67,23 +67,45 @@ async function basicInit(page: Page) {
 
   // Standard franchises and stores
   await page.route(/\/api\/franchise(\?.*)?$/, async (route) => {
-    const franchiseRes = {
-      franchises: [
-        {
-          id: 2,
-          name: 'LotaPizza',
-          stores: [
-            { id: 4, name: 'Lehi' },
-            { id: 5, name: 'Springville' },
-            { id: 6, name: 'American Fork' },
+    const req = route.request();
+    const method = req.method();
+    if (method==='GET') {
+        const franchiseRes = {
+          franchises: [
+            {
+              id: 2,
+              name: 'LotaPizza',
+              stores: [
+                { id: 4, name: 'Lehi' },
+                { id: 5, name: 'Springville' },
+                { id: 6, name: 'American Fork' },
+              ],
+            },
+            { id: 3, name: 'PizzaCorp', stores: [{ id: 7, name: 'Spanish Fork' }] },
+            { id: 4, name: 'topSpot', stores: [] },
           ],
+        };
+        expect(route.request().method()).toBe('GET');
+        await route.fulfill({ json: franchiseRes });
+    }
+    if(method==='POST') {
+        const authHeader = req.headers()['authorization'];
+        expect(authHeader).toMatch(/^Bearer\s.+/);
+
+        const { name, admins } = req.postDataJSON();
+
+        await route.fulfill({
+        json: {
+            id: 1,
+            name,
+            admins: admins.map((a: { email: string }, i: number) => ({
+            id: i + 4,
+            email: a.email,
+            name: 'pizza franchisee',
+            })),
         },
-        { id: 3, name: 'PizzaCorp', stores: [{ id: 7, name: 'Spanish Fork' }] },
-        { id: 4, name: 'topSpot', stores: [] },
-      ],
-    };
-    expect(route.request().method()).toBe('GET');
-    await route.fulfill({ json: franchiseRes });
+    });
+    }
   });
 
   // Order a pizza.
@@ -163,4 +185,26 @@ test('admin page', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Franchises' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Add Franchise' })).toBeVisible();
 
+});
+
+test('create franchise', async ({ page }) => {
+  await basicInit(page);
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('a');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  await page.getByRole('link', { name: 'Admin' }).click();
+  await expect(page.getByRole('button', { name: 'Add Franchise' })).toBeVisible();
+
+  await page.getByRole('button', { name: 'Add Franchise' }).click();
+  await page.getByRole('textbox', { name: 'franchise name' }).click();
+  await page.getByRole('textbox', { name: 'franchise name' }).fill('pizza franchise');
+  await page.getByRole('textbox', { name: 'franchisee admin email' }).click();
+  await page.getByRole('textbox', { name: 'franchisee admin email' }).fill('a@jwt.com');
+  await expect(page.getByRole('button', { name: 'Create' })).toBeVisible();
+  await expect(page.getByText('Create franchise', { exact: true })).toBeVisible();
+  await expect(page.getByText('homeadmin-dashboardcreate-')).toBeVisible();
+  await page.getByRole('button', { name: 'Create' }).click();
+  await expect(page.getByRole('heading', { name: 'Franchises' })).toBeVisible();
 });
