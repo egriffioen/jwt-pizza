@@ -88,14 +88,62 @@ async function basicInit(page: Page) {
 
   // Order a pizza.
   await page.route('*/**/api/order', async (route) => {
-    const orderReq = route.request().postDataJSON();
-    const orderRes = {
-      order: { ...orderReq, id: 23 },
-      jwt: 'eyJpYXQ',
-    };
-    expect(route.request().method()).toBe('POST');
-    await route.fulfill({ json: orderRes });
-  });
+      const req = route.request();
+      const method = req.method();
+
+      if (method === 'GET') {
+        const authHeader = req.headers()['authorization'];
+        expect(authHeader).toMatch(/^Bearer\s.+/);
+
+        await route.fulfill({
+          json: {
+            dinerId: 4,
+            orders: [
+              {
+                id: 1,
+                franchiseId: 1,
+                storeId: 1,
+                date: '2024-06-05T05:14:40.000Z',
+                items: [
+                  {
+                    id: 1,
+                    menuId: 1,
+                    description: 'Veggie',
+                    price: 0.05,
+                  },
+                ],
+              },
+            ],
+            page: 1,
+          },
+        });
+      }
+
+      if (method === 'POST') {
+        const orderReq = route.request().postDataJSON();
+        const orderRes = {
+          order: { ...orderReq, id: 23 },
+          jwt: 'eyJpYXQ',
+        };
+        expect(route.request().method()).toBe('POST');
+        await route.fulfill({ json: orderRes });
+    }});
 
   await page.goto('/');
 }
+
+test('login admin', async ({ page }) => {
+  await basicInit(page);
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('a');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  await expect(page.getByRole('link', { name: 'KC' })).toBeVisible();
+  await page.getByRole('link', { name: 'KC' }).click();
+  await expect(page.getByText('Your pizza kitchen')).toBeVisible();
+  await expect(page.getByText('name:')).toBeVisible();
+  await expect(page.getByText('email:')).toBeVisible();
+  await expect(page.getByText('admin', { exact: true })).toBeVisible();
+
+});
