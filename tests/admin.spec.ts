@@ -147,3 +147,20 @@ test('login admin', async ({ page }) => {
   await expect(page.getByText('admin', { exact: true })).toBeVisible();
 
 });
+
+
+test('admin page', async ({ page }) => {
+  await basicInit(page);
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('a');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+
+  await page.getByRole('link', { name: 'Admin' }).click();
+  await expect(page.getByText('homeadmin-dashboard')).toBeVisible();
+  await expect(page.getByText('Mama Ricci\'s kitchen')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Franchises' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Add Franchise' })).toBeVisible();
+
+});
