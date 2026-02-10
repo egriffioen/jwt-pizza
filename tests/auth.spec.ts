@@ -207,3 +207,24 @@ test('logout clears session', async ({ page }) => {
   // UI reflects logout
   await expect(page.getByRole('link', { name: 'Login' })).toBeVisible();
 });
+
+test('about page', async ({ page }) => {
+  await page.goto('/');
+  expect(await page.title()).toBe('JWT Pizza');
+  await page.getByRole('link', { name: 'About' }).click();
+
+  await expect(page.getByText('The secret sauce')).toBeVisible();
+  await expect(page.getByText('homeabout')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Our employees' })).toBeVisible();
+
+});
+
+test('history page', async ({ page }) => {
+  await page.goto('/');
+  expect(await page.title()).toBe('JWT Pizza');
+  
+  await page.getByRole('link', { name: 'History' }).click();
+  await expect(page.getByText('Mama Rucci, my my')).toBeVisible();
+  await expect(page.getByText('homehistory')).toBeVisible();
+
+});
