@@ -281,3 +281,14 @@ test('history page', async ({ page }) => {
 
 });
 
+test('franchise page not an admin', async ({ page }) => {
+  await page.goto('/');
+  expect(await page.title()).toBe('JWT Pizza');
+
+  await page.getByLabel('Global').getByRole('link', { name: 'Franchise' }).click();
+  await expect(page.getByText('So you want a piece of the')).toBeVisible();
+  await expect(page.getByText('homefranchise-dashboard')).toBeVisible();
+
+});
+
+
