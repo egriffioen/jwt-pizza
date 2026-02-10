@@ -20,7 +20,7 @@ test('home page', async ({ page }) => {
 });
 
 test('register a user', async ({ page }) => {
-  await page.goto('/');
+  await basicInit(page);
 
   await page.getByRole('link', { name: 'Register' }).click();
   await page.getByRole('textbox', { name: 'Full name' }).click();
@@ -34,24 +34,6 @@ test('register a user', async ({ page }) => {
   await page.getByText('JWT Pizza', { exact: true }).click();
 });
 
-test('login', async ({ page }) => {
-  await page.goto('/');
-  expect(await page.title()).toBe('JWT Pizza');
-
-  await page.getByRole('link', { name: 'Login' }).click();
-  await page.getByRole('textbox', { name: 'Email address' }).click();
-  await page.getByRole('textbox', { name: 'Email address' }).fill('ellagriffioen@test.com');
-  await page.getByRole('textbox', { name: 'Password' }).click();
-  await page.getByRole('textbox', { name: 'Password' }).fill('123');
-  await page.getByRole('button', { name: 'Login' }).click();
-  await page.getByRole('link', { name: 'E', exact: true }).click();
-  await page.getByText('Your pizza kitchen').click();
-  await page.getByRole('img', { name: 'Employee stock photo' }).click();
-  await page.getByText('Ella', { exact: true }).click();
-  await page.getByText('ellagriffioen@test.com').click();
-  await page.getByText('diner', { exact: true }).click();
-});
-
 async function basicInit(page: Page) {
   let loggedInUser: User | undefined;
   const validUsers: Record<string, User> = { 'd@jwt.com': { id: '3', name: 'Kai Chen', email: 'd@jwt.com', password: 'a', roles: [{ role: Role.Diner }] } };
@@ -60,6 +42,38 @@ async function basicInit(page: Page) {
   await page.route('*/**/api/auth', async (route) => {
     const req = route.request();
     const method = req.method();
+    if (method === 'POST') {
+      const { name, email, password } = req.postDataJSON();
+
+      if (validUsers[email]) {
+        await route.fulfill({
+          status: 409,
+          json: { error: 'User already exists' },
+        });
+        return;
+      }
+      const newUser: User = {
+        id: String(Object.keys(validUsers).length + 1),
+        name,
+        email,
+        password,
+        roles: [{ role: Role.Diner }],
+      };
+      validUsers[email] = newUser;
+      loggedInUser = newUser;
+
+      await route.fulfill({
+        json: {
+          user: {
+            id: newUser.id,
+            name: newUser.name,
+            email: newUser.email,
+            roles: newUser.roles,
+          },
+          token: 'tttttt',
+        },
+      });
+    }
     if (method === 'PUT') {
       const loginReq = route.request().postDataJSON();
       const user = validUsers[loginReq.email];
@@ -138,14 +152,47 @@ async function basicInit(page: Page) {
 
   // Order a pizza.
   await page.route('*/**/api/order', async (route) => {
-    const orderReq = route.request().postDataJSON();
-    const orderRes = {
-      order: { ...orderReq, id: 23 },
-      jwt: 'eyJpYXQ',
-    };
-    expect(route.request().method()).toBe('POST');
-    await route.fulfill({ json: orderRes });
-  });
+      const req = route.request();
+      const method = req.method();
+
+      if (method === 'GET') {
+        const authHeader = req.headers()['authorization'];
+        expect(authHeader).toMatch(/^Bearer\s.+/);
+
+        await route.fulfill({
+          json: {
+            dinerId: 4,
+            orders: [
+              {
+                id: 1,
+                franchiseId: 1,
+                storeId: 1,
+                date: '2024-06-05T05:14:40.000Z',
+                items: [
+                  {
+                    id: 1,
+                    menuId: 1,
+                    description: 'Veggie',
+                    price: 0.05,
+                  },
+                ],
+              },
+            ],
+            page: 1,
+          },
+        });
+      }
+
+      if (method === 'POST') {
+        const orderReq = route.request().postDataJSON();
+        const orderRes = {
+          order: { ...orderReq, id: 23 },
+          jwt: 'eyJpYXQ',
+        };
+        expect(route.request().method()).toBe('POST');
+        await route.fulfill({ json: orderRes });
+    }});
+
 
   await page.goto('/');
 }
@@ -158,6 +205,11 @@ test('login using mock', async ({ page }) => {
   await page.getByRole('button', { name: 'Login' }).click();
 
   await expect(page.getByRole('link', { name: 'KC' })).toBeVisible();
+  await page.getByRole('link', { name: 'KC' }).click();
+  await expect(page.getByText('Your pizza kitchen')).toBeVisible();
+  await expect(page.getByText('name:')).toBeVisible();
+  await expect(page.getByText('email:')).toBeVisible();
+
 });
 
 test('purchase with login', async ({ page }) => {
@@ -228,3 +280,4 @@ test('history page', async ({ page }) => {
   await expect(page.getByText('homehistory')).toBeVisible();
 
 });
+
