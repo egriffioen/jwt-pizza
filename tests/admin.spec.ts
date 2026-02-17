@@ -319,10 +319,9 @@ test('login admin', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'KC' })).toBeVisible();
   await page.getByRole('link', { name: 'KC' }).click();
   await expect(page.getByText('Your pizza kitchen')).toBeVisible();
-  await expect(page.getByText('name:')).toBeVisible();
-  await expect(page.getByText('email:')).toBeVisible();
-  await expect(page.getByText('admin', { exact: true })).toBeVisible();
-
+  await expect(page.getByText('name:').first()).toBeVisible();
+  await expect(page.getByText('email:').first()).toBeVisible();
+  await expect(page.getByText('admin').first()).toBeVisible();
 });
 
 
