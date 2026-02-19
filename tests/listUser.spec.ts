@@ -4,7 +4,7 @@ import { User, Role } from '../src/service/pizzaService';
 
 async function basicInit(page: Page) {
   let loggedInUser: User | undefined;
-  const validUsers: Record<string, User> = { 'a@jwt.com': { id: '3', name: 'Kai Chen', email: 'a@jwt.com', password: 'a', roles: [{ role: Role.Admin }] } };
+  //const validUsers: Record<string, User> = { 'a@jwt.com': { id: '3', name: 'Kai Chen', email: 'a@jwt.com', password: 'a', roles: [{ role: Role.Admin }] } };
 type Franchise = {
   id: number;
   name: string;
@@ -27,10 +27,10 @@ let franchises: Franchise[] = [
 ];
 
 let users = [
-  { id: '3', name: 'Kai Chen', email: 'a@jwt.com', roles: [{ role: Role.Admin }] },
-  { id: '4', name: 'Nathan Hacking', email: 'n@jwt.com', roles: [{ role: Role.Admin }] },
-  { id: '5', name: 'Jeffrey', email: 'j@jwt.com', roles: [{ role: Role.Franchisee }] },
-  { id: '6', name: 'Riley Hacking', email: 'r@jwt.com', roles: [{ role: Role.Diner }] },
+  { id: '3', name: 'Kai Chen', email: 'a@jwt.com', password:'a', roles: [{ role: Role.Admin }] },
+  { id: '4', name: 'Nathan Hacking', email: 'n@jwt.com', password:'a', roles: [{ role: Role.Admin }] },
+  { id: '5', name: 'Jeffrey', email: 'j@jwt.com', password:'a', roles: [{ role: Role.Franchisee }] },
+  { id: '6', name: 'Riley Hacking', email: 'r@jwt.com', password:'a', roles: [{ role: Role.Diner }] },
 ];
   // Authorize login for the given user
   await page.route('*/**/api/auth', async (route) => {
@@ -38,12 +38,14 @@ let users = [
     const method = req.method();
     if (method === 'PUT') {
       const loginReq = route.request().postDataJSON();
-      const user = validUsers[loginReq.email];
+      const user = users.find(u => u.email === loginReq.email);
+
       if (!user || user.password !== loginReq.password) {
         await route.fulfill({ status: 401, json: { error: 'Unauthorized' } });
         return;
       }
-      loggedInUser = validUsers[loginReq.email];
+
+      loggedInUser = user;
       const loginRes = {
         user: loggedInUser,
         token: 'abcdef',
@@ -501,6 +503,46 @@ test('admin cannot delete themselves', async ({ page }) => {
   const selfRow = page.getByRole('row', { name: 'Kai Chen a@jwt.com admin Delete' });
 
   await expect(selfRow.getByRole('button', { name: 'Delete' })).toBeDisabled();
+});
+
+test('deleted user cannot login', async ({ page }) => {
+  await basicInit(page);
+
+  //ensure user can log in at first
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('n@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('a');
+  await page.getByRole('button', { name: 'Login' }).click();
+  await page.getByRole('link', { name: 'Logout' }).click();
+
+  // Login as admin
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('a');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  // Go to admin
+  await page.getByRole('link', { name: 'Admin' }).click();
+
+  // Delete Nathan
+  await page
+    .getByRole('row', { name: 'Nathan Hacking n@jwt.com admin Delete' })
+    .getByRole('button')
+    .click();
+
+  await expect(page.getByText('Nathan Hacking')).not.toBeVisible();
+
+  // Logout admin
+  await page.getByRole('link', { name: 'Logout' }).click();
+
+  // Attempt login as deleted user
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('n@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('a');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  // Expect login failure
+  await expect(page.getByText('{"code":401}')).toBeVisible();
 });
 
 async function basicInitDiner(page: Page) {
