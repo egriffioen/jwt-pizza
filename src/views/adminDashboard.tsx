@@ -45,7 +45,7 @@ export default function AdminDashboard(props: Props) {
       <View title="Mama Ricci's kitchen">
         <div className="text-start py-8 px-4 sm:px-6 lg:px-8">
           <h3 className="text-neutral-100 text-xl">Users</h3>
-          {/* <div className="bg-neutral-100 overflow-clip my-4">
+          <div className="bg-neutral-100 overflow-clip my-4">
             <div className="flex flex-col">
               <div className="-m-1.5 overflow-x-auto">
                 <div className="p-1.5 min-w-full inline-block align-middle">
@@ -53,14 +53,14 @@ export default function AdminDashboard(props: Props) {
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="uppercase text-neutral-100 bg-slate-400 border-b-2 border-gray-500">
                         <tr>
-                          {['Franchise', 'Franchisee', 'Store', 'Revenue', 'Action'].map((header) => (
+                          {['Name', 'Email', 'Role'].map((header) => (
                             <th key={header} scope="col" className="px-6 py-3 text-center text-xs font-medium">
                               {header}
                             </th>
                           ))}
                         </tr>
                       </thead>
-                      {franchiseList.franchises.map((franchise, findex) => {
+                      {/* {franchiseList.franchises.map((franchise, findex) => {
                         return (
                           <tbody key={findex} className="divide-y divide-gray-200">
                             <tr className="border-neutral-500 border-t-2">
@@ -112,13 +112,13 @@ export default function AdminDashboard(props: Props) {
                             </button>
                           </td>
                         </tr>
-                      </tfoot>
+                      </tfoot> */}
                     </table>
                   </div>
                 </div>
               </div>
             </div>
-          </div> */}
+          </div>
         </div>
 
 
