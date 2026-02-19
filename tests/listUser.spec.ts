@@ -458,7 +458,7 @@ test('delete franchise', async ({ page }) => {
 
 
   await page.getByRole('link', { name: 'Admin' }).click();
-  await page.getByRole('row', { name: 'Nathan Hacking n@jwt.com admin Close' }).getByRole('button').click();
+  await page.getByRole('row', { name: 'Nathan Hacking n@jwt.com admin Delete' }).getByRole('button').click();
 });
 
 async function basicInitDiner(page: Page) {
