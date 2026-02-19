@@ -313,29 +313,42 @@ let franchises: Franchise[] = [
       const authHeader = req.headers()['authorization'];
       expect(authHeader).toMatch(/^Bearer\s.+/);
 
-      // Return a paginated response like your real backend
+      const url = new URL(req.url());
+      const nameFilter = url.searchParams.get('name') || '*';
+
+      const allUsers = [
+        {
+          id: '3',
+          name: 'Kai Chen',
+          email: 'a@jwt.com',
+          roles: [{ role: Role.Admin }],
+        },
+        {
+          id: '4',
+          name: 'Nathan Hacking',
+          email: 'n@jwt.com',
+          roles: [{ role: Role.Diner }],
+        },
+        {
+          id: '5',
+          name: 'Jeffrey',
+          email: 'j@jwt.com',
+          roles: [{ role: Role.Franchisee }],
+        },
+      ];
+
+      // Remove wildcard * characters
+      const cleaned = nameFilter.replace(/\*/g, '').toLowerCase();
+
+      const filteredUsers = cleaned
+        ? allUsers.filter(u =>
+            u.name.toLowerCase().includes(cleaned)
+          )
+        : allUsers;
+
       await route.fulfill({
         json: {
-          users: [
-            {
-              id: '3',
-              name: 'Kai Chen',
-              email: 'a@jwt.com',
-              roles: [{ role: Role.Admin }],
-            },
-            {
-              id: '4',
-              name: 'Nathan Hacking',
-              email: 'n@jwt.com',
-              roles: [{ role: Role.Diner }],
-            },
-            {
-              id: '5',
-              name: 'Jeffrey',
-              email: 'j@jwt.com',
-              roles: [{ role: Role.Franchisee }],
-            },
-          ],
+          users: filteredUsers,
           page: 0,
           more: false,
         },
@@ -370,4 +383,27 @@ test('admin page with users', async ({ page }) => {
 
   await expect(page.getByRole('textbox', { name: 'Filter users' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Submit' }).first()).toBeVisible();
+});
+
+
+test('admin can filter users by name', async ({ page }) => {
+  await basicInit(page);
+
+  // Login
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('a');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  await page.getByRole('link', { name: 'Admin' }).click();
+
+  await expect(page.getByText('Kai Chen').first()).toBeVisible();
+  await expect(page.getByText('Nathan Hacking')).toBeVisible();
+  await expect(page.getByText('Jeffrey')).toBeVisible();
+
+  await page.getByRole('textbox', { name: 'Filter users' }).fill('Nathan');
+  await page.getByRole('button', { name: 'Submit' }).first().click();
+
+  await expect(page.getByText('Nathan Hacking')).toBeVisible();
+  await expect(page.getByText('Jeffrey')).not.toBeVisible();
 });
