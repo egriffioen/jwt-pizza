@@ -314,43 +314,36 @@ let franchises: Franchise[] = [
       expect(authHeader).toMatch(/^Bearer\s.+/);
 
       const url = new URL(req.url());
-      const nameFilter = url.searchParams.get('name') || '*';
+      const pageParam = Number(url.searchParams.get('page') ?? 0);
+      //const limitParam = Number(url.searchParams.get('limit') ?? 2);
+      const limitParam = 2;
+      const nameFilter = url.searchParams.get('name') ?? '*';
 
       const allUsers = [
-        {
-          id: '3',
-          name: 'Kai Chen',
-          email: 'a@jwt.com',
-          roles: [{ role: Role.Admin }],
-        },
-        {
-          id: '4',
-          name: 'Nathan Hacking',
-          email: 'n@jwt.com',
-          roles: [{ role: Role.Diner }],
-        },
-        {
-          id: '5',
-          name: 'Jeffrey',
-          email: 'j@jwt.com',
-          roles: [{ role: Role.Franchisee }],
-        },
+        { id: '3', name: 'Kai Chen', email: 'a@jwt.com', roles: [{ role: Role.Admin }] },
+        { id: '4', name: 'Nathan Hacking', email: 'n@jwt.com', roles: [{ role: Role.Admin }] },
+        { id: '5', name: 'Jeffrey', email: 'j@jwt.com', roles: [{ role: Role.Franchisee }] },
+        { id: '6', name: 'Riley Hacking', email: 'r@jwt.com', roles: [{ role: Role.Diner }] },
       ];
 
-      // Remove wildcard * characters
+      // Filtering
       const cleaned = nameFilter.replace(/\*/g, '').toLowerCase();
-
       const filteredUsers = cleaned
-        ? allUsers.filter(u =>
-            u.name.toLowerCase().includes(cleaned)
-          )
+        ? allUsers.filter(u => u.name.toLowerCase().includes(cleaned))
         : allUsers;
+
+      // Pagination logic
+      const start = pageParam * limitParam;
+      const end = start + limitParam;
+      const paginatedUsers = filteredUsers.slice(start, end);
+
+      const more = end < filteredUsers.length;
 
       await route.fulfill({
         json: {
-          users: filteredUsers,
-          page: 0,
-          more: false,
+          users: paginatedUsers,
+          page: pageParam,
+          more,
         },
       });
     });
@@ -378,7 +371,7 @@ test('admin page with users', async ({ page }) => {
 
   await expect(page.getByRole('cell', { name: 'Kai Chen' }).first()).toBeVisible();
   await expect(page.getByRole('cell', { name: 'a@jwt.com' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'admin' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'admin' }).first()).toBeVisible();
 
 
   await expect(page.getByRole('textbox', { name: 'Filter users' })).toBeVisible();
@@ -388,8 +381,6 @@ test('admin page with users', async ({ page }) => {
 
 test('admin can filter users by name', async ({ page }) => {
   await basicInit(page);
-
-  // Login
   await page.getByRole('link', { name: 'Login' }).click();
   await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
   await page.getByRole('textbox', { name: 'Password' }).fill('a');
@@ -399,11 +390,33 @@ test('admin can filter users by name', async ({ page }) => {
 
   await expect(page.getByText('Kai Chen').first()).toBeVisible();
   await expect(page.getByText('Nathan Hacking')).toBeVisible();
-  await expect(page.getByText('Jeffrey')).toBeVisible();
 
-  await page.getByRole('textbox', { name: 'Filter users' }).fill('Nathan');
+  await page.getByRole('textbox', { name: 'Filter users' }).fill('Jeffrey');
   await page.getByRole('button', { name: 'Submit' }).first().click();
 
+  await expect(page.getByText('Jeffrey')).toBeVisible();
+  await expect(page.getByText('Nathan Hacking')).not.toBeVisible();
+});
+
+test('admin can paginate users', async ({ page }) => {
+  await basicInit(page);
+
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('a');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  await page.getByRole('link', { name: 'Admin' }).click();
+
+  // Page 0 should show first 2 users
+  await expect(page.getByText('Kai Chen').first()).toBeVisible();
   await expect(page.getByText('Nathan Hacking')).toBeVisible();
   await expect(page.getByText('Jeffrey')).not.toBeVisible();
+
+  await page.getByRole('button', { name: '»' }).first().click();
+
+  // Page 1 should show next users
+  await expect(page.getByText('Jeffrey')).toBeVisible();
+  await expect(page.getByText('Riley Hacking')).toBeVisible();
+  await expect(page.getByText('Nathan Hacking')).not.toBeVisible();
 });
