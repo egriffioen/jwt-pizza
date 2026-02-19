@@ -488,6 +488,21 @@ test('delete user', async ({ page }) => {
 
 });
 
+test('admin cannot delete themselves', async ({ page }) => {
+  await basicInit(page);
+
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('a');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  await page.getByRole('link', { name: 'Admin' }).click();
+
+  const selfRow = page.getByRole('row', { name: 'Kai Chen a@jwt.com admin Delete' });
+
+  await expect(selfRow.getByRole('button', { name: 'Delete' })).toBeDisabled();
+});
+
 async function basicInitDiner(page: Page) {
   let loggedInUser: User | undefined;
   const validUsers: Record<string, User> = { 'd@jwt.com': { id: '3', name: 'Kai Chen', email: 'd@jwt.com', password: 'a', roles: [{ role: Role.Diner }] } };
