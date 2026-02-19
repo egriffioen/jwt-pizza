@@ -434,6 +434,21 @@ test('non-admin cannot access admin page', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Admin' })).not.toBeVisible();
 });
 
+test('filter shows empty state when no users match', async ({ page }) => {
+  await basicInit(page);
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('a');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  await page.getByRole('link', { name: 'Admin' }).click();
+
+  await page.getByRole('textbox', { name: 'Filter users' }).fill('zzzzz');
+  await page.getByRole('button', { name: 'Submit' }).first().click();
+
+  await expect(page.getByText('Nathan Hacking')).not.toBeVisible();
+});
+
 async function basicInitDiner(page: Page) {
   let loggedInUser: User | undefined;
   const validUsers: Record<string, User> = { 'd@jwt.com': { id: '3', name: 'Kai Chen', email: 'd@jwt.com', password: 'a', roles: [{ role: Role.Diner }] } };
