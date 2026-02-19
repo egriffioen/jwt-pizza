@@ -323,4 +323,7 @@ test('admin page with users', async ({ page }) => {
 
   await expect(page.getByRole('main')).toContainText('Users');
 
+  await expect(page.getByRole('columnheader', { name: 'Name', exact: true })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: 'Email', exact: true })).toBeVisible();
+  await expect(page.getByRole('columnheader', { name: 'Role', exact: true })).toBeVisible();
 });
