@@ -449,6 +449,18 @@ test('filter shows empty state when no users match', async ({ page }) => {
   await expect(page.getByText('Nathan Hacking')).not.toBeVisible();
 });
 
+test('delete franchise', async ({ page }) => {
+  await basicInit(page);
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('a');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+
+  await page.getByRole('link', { name: 'Admin' }).click();
+  await page.getByRole('row', { name: 'Nathan Hacking n@jwt.com admin Close' }).getByRole('button').click();
+});
+
 async function basicInitDiner(page: Page) {
   let loggedInUser: User | undefined;
   const validUsers: Record<string, User> = { 'd@jwt.com': { id: '3', name: 'Kai Chen', email: 'd@jwt.com', password: 'a', roles: [{ role: Role.Diner }] } };
