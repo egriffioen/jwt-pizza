@@ -306,6 +306,30 @@ let franchises: Franchise[] = [
         await route.fulfill({ json: orderRes });
     }});
 
+    await page.route(/\/api\/user(\?.*)?$/, async (route) => {
+      const req = route.request();
+      expect(req.method()).toBe('GET');
+
+      const authHeader = req.headers()['authorization'];
+      expect(authHeader).toMatch(/^Bearer\s.+/);
+
+      // Return a paginated response like your real backend
+      await route.fulfill({
+        json: {
+          users: [
+            {
+              id: '3',
+              name: 'Kai Chen',
+              email: 'a@jwt.com',
+              roles: [{ role: Role.Admin }],
+            },
+          ],
+          page: 0,
+          more: false,
+        },
+      });
+    });
+
   await page.goto('/');
 }
 
@@ -327,7 +351,7 @@ test('admin page with users', async ({ page }) => {
   await expect(page.getByRole('columnheader', { name: 'Email', exact: true })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: 'Role', exact: true })).toBeVisible();
 
-  await expect(page.getByRole('cell', { name: 'Kai Chen' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Kai Chen' }).first()).toBeVisible();
   await expect(page.getByRole('cell', { name: 'a@jwt.com' })).toBeVisible();
-  await expect(page.getByRole('cell', { name: 'Admin' }).first()).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'admin' })).toBeVisible();
 });
