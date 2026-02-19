@@ -323,6 +323,18 @@ let franchises: Franchise[] = [
               email: 'a@jwt.com',
               roles: [{ role: Role.Admin }],
             },
+            {
+              id: '4',
+              name: 'Nathan Hacking',
+              email: 'n@jwt.com',
+              roles: [{ role: Role.Diner }],
+            },
+            {
+              id: '5',
+              name: 'Jeffrey',
+              email: 'j@jwt.com',
+              roles: [{ role: Role.Franchisee }],
+            },
           ],
           page: 0,
           more: false,
@@ -354,4 +366,8 @@ test('admin page with users', async ({ page }) => {
   await expect(page.getByRole('cell', { name: 'Kai Chen' }).first()).toBeVisible();
   await expect(page.getByRole('cell', { name: 'a@jwt.com' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'admin' })).toBeVisible();
+
+
+  await expect(page.getByRole('textbox', { name: 'Filter users' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Submit' }).first()).toBeVisible();
 });
