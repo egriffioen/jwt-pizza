@@ -25,6 +25,13 @@ let franchises: Franchise[] = [
     ],
   },
 ];
+
+let users = [
+  { id: '3', name: 'Kai Chen', email: 'a@jwt.com', roles: [{ role: Role.Admin }] },
+  { id: '4', name: 'Nathan Hacking', email: 'n@jwt.com', roles: [{ role: Role.Admin }] },
+  { id: '5', name: 'Jeffrey', email: 'j@jwt.com', roles: [{ role: Role.Franchisee }] },
+  { id: '6', name: 'Riley Hacking', email: 'r@jwt.com', roles: [{ role: Role.Diner }] },
+];
   // Authorize login for the given user
   await page.route('*/**/api/auth', async (route) => {
     const req = route.request();
@@ -319,18 +326,11 @@ let franchises: Franchise[] = [
       const limitParam = 2;
       const nameFilter = url.searchParams.get('name') ?? '*';
 
-      const allUsers = [
-        { id: '3', name: 'Kai Chen', email: 'a@jwt.com', roles: [{ role: Role.Admin }] },
-        { id: '4', name: 'Nathan Hacking', email: 'n@jwt.com', roles: [{ role: Role.Admin }] },
-        { id: '5', name: 'Jeffrey', email: 'j@jwt.com', roles: [{ role: Role.Franchisee }] },
-        { id: '6', name: 'Riley Hacking', email: 'r@jwt.com', roles: [{ role: Role.Diner }] },
-      ];
-
       // Filtering
       const cleaned = nameFilter.replace(/\*/g, '').toLowerCase();
       const filteredUsers = cleaned
-        ? allUsers.filter(u => u.name.toLowerCase().includes(cleaned))
-        : allUsers;
+        ? users.filter(u => u.name.toLowerCase().includes(cleaned))
+        : users;
 
       // Pagination logic
       const start = pageParam * limitParam;
@@ -345,6 +345,30 @@ let franchises: Franchise[] = [
           page: pageParam,
           more,
         },
+      });
+    });
+
+    await page.route(/\/api\/user\/\d+$/, async (route) => {
+      const req = route.request();
+
+      if (req.method() !== 'DELETE') {
+        return route.fallback();
+      }
+
+      const authHeader = req.headers()['authorization'];
+      expect(authHeader).toMatch(/^Bearer\s.+/);
+
+      const url = new URL(req.url());
+      const match = url.pathname.match(/\/api\/user\/(\d+)/);
+      expect(match).not.toBeNull();
+
+      const userId = match![1];
+
+      // Remove user from in-memory array
+      users = users.filter(u => u.id !== userId);
+
+      await route.fulfill({
+        json: { message: 'user deleted' },
       });
     });
 
@@ -449,7 +473,7 @@ test('filter shows empty state when no users match', async ({ page }) => {
   await expect(page.getByText('Nathan Hacking')).not.toBeVisible();
 });
 
-test('delete franchise', async ({ page }) => {
+test('delete user', async ({ page }) => {
   await basicInit(page);
   await page.getByRole('link', { name: 'Login' }).click();
   await page.getByRole('textbox', { name: 'Email address' }).fill('a@jwt.com');
@@ -460,6 +484,7 @@ test('delete franchise', async ({ page }) => {
   await page.getByRole('link', { name: 'Admin' }).click();
   await page.getByRole('row', { name: 'Nathan Hacking n@jwt.com admin Delete' }).getByRole('button').click();
   await expect(page.getByText('Nathan Hacking')).not.toBeVisible();
+  await expect(page.getByText('Jeffrey')).toBeVisible();
 
 });
 

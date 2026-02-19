@@ -52,6 +52,19 @@ export default function AdminDashboard(props: Props) {
     setUserList(await pizzaService.listUsers(userPage, 10, `*${filterUserRef.current?.value}*`));
   }
 
+  async function deleteUser(user: User) {
+      await pizzaService.deleteUser(user);
+
+      const updated = await pizzaService.listUsers(userPage, 10, '*');
+
+      // If page became empty and not first page, go back one page
+      if (updated.users.length === 0 && userPage > 0) {
+        setUserPage(userPage - 1);
+      } else {
+        setUserList(updated);
+      }
+  }
+
   let response = <NotFound />;
   if (Role.isRole(props.user, Role.Admin)) {
     response = (
