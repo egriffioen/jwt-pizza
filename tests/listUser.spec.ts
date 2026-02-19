@@ -326,4 +326,8 @@ test('admin page with users', async ({ page }) => {
   await expect(page.getByRole('columnheader', { name: 'Name', exact: true })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: 'Email', exact: true })).toBeVisible();
   await expect(page.getByRole('columnheader', { name: 'Role', exact: true })).toBeVisible();
+
+  await expect(page.getByRole('cell', { name: 'Kai Chen' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'a@jwt.com' })).toBeVisible();
+  await expect(page.getByRole('cell', { name: 'Admin' }).first()).toBeVisible();
 });
