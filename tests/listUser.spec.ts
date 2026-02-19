@@ -420,3 +420,139 @@ test('admin can paginate users', async ({ page }) => {
   await expect(page.getByText('Riley Hacking')).toBeVisible();
   await expect(page.getByText('Nathan Hacking')).not.toBeVisible();
 });
+
+test('non-admin cannot access admin page', async ({ page }) => {
+  await basicInitDiner(page);
+
+  // Add a non-admin user to validUsers first
+
+  await page.getByRole('link', { name: 'Login' }).click();
+  await page.getByRole('textbox', { name: 'Email address' }).fill('d@jwt.com');
+  await page.getByRole('textbox', { name: 'Password' }).fill('a');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  await expect(page.getByRole('link', { name: 'Admin' })).not.toBeVisible();
+});
+
+async function basicInitDiner(page: Page) {
+  let loggedInUser: User | undefined;
+  const validUsers: Record<string, User> = { 'd@jwt.com': { id: '3', name: 'Kai Chen', email: 'd@jwt.com', password: 'a', roles: [{ role: Role.Diner }] } };
+
+  // Authorize login for the given user
+  await page.route('*/**/api/auth', async (route) => {
+    const req = route.request();
+    const method = req.method();
+    if (method === 'POST') {
+      const { name, email, password } = req.postDataJSON();
+
+      if (validUsers[email]) {
+        await route.fulfill({
+          status: 409,
+          json: { error: 'User already exists' },
+        });
+        return;
+      }
+      const newUser: User = {
+        id: String(Object.keys(validUsers).length + 1),
+        name,
+        email,
+        password,
+        roles: [{ role: Role.Diner }],
+      };
+      validUsers[email] = newUser;
+      loggedInUser = newUser;
+
+      await route.fulfill({
+        json: {
+          user: {
+            id: newUser.id,
+            name: newUser.name,
+            email: newUser.email,
+            roles: newUser.roles,
+          },
+          token: 'tttttt',
+        },
+      });
+    }
+    if (method === 'PUT') {
+      const loginReq = route.request().postDataJSON();
+      const user = validUsers[loginReq.email];
+      if (!user || user.password !== loginReq.password) {
+        await route.fulfill({ status: 401, json: { error: 'Unauthorized' } });
+        return;
+      }
+      loggedInUser = validUsers[loginReq.email];
+      const loginRes = {
+        user: loggedInUser,
+        token: 'abcdef',
+      };
+      expect(route.request().method()).toBe('PUT');
+      await route.fulfill({ json: loginRes });
+    }
+    if (method === 'DELETE') {
+      const authHeader = req.headers()['authorization'];
+      expect(authHeader).toMatch(/^Bearer\s.+/);
+
+      loggedInUser = undefined;
+
+      await route.fulfill({
+        json: { message: 'logout successful' },
+      });
+    }
+  });
+
+  // Update user
+  await page.route(/\/api\/user\/\d+$/, async (route) => {
+    const req = route.request();
+
+    if (req.method() !== 'PUT') {
+      await route.continue();
+      return;
+    }
+
+    const authHeader = req.headers()['authorization'];
+    expect(authHeader).toMatch(/^Bearer\s.+/);
+
+    if (!loggedInUser) {
+      await route.fulfill({ status: 401, json: { error: 'Unauthorized' } });
+      return;
+    }
+
+    const updateReq = req.postDataJSON();
+    const userId = req.url().split('/').pop();
+
+    if (loggedInUser.id !== userId) {
+      await route.fulfill({ status: 403, json: { error: 'Forbidden' } });
+      return;
+    }
+
+    // Update user in memory
+    const updatedUser = {
+      ...loggedInUser,
+      ...updateReq,
+    };
+
+    loggedInUser = updatedUser;
+    validUsers[updatedUser.email] = updatedUser;
+
+    await route.fulfill({
+      json: {
+        user: {
+          id: updatedUser.id,
+          name: updatedUser.name,
+          email: updatedUser.email,
+          roles: updatedUser.roles,
+        },
+        token: 'tttttt',
+      },
+    });
+  });
+
+  // Return the currently logged in user
+  await page.route('*/**/api/user/me', async (route) => {
+    expect(route.request().method()).toBe('GET');
+    await route.fulfill({ json: loggedInUser });
+  });
+
+  await page.goto('/');
+}
