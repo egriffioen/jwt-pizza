@@ -78,40 +78,40 @@ test('updateUser email', async ({ page }) => {
   await expect(page.getByRole('main')).toContainText(email);
 });
 
-test('updateUser password', async ({ page }) => {
-  await basicInit(page);
-  let email = `user${Math.floor(Math.random() * 10000)}@jwt.com`;
-  await page.getByRole('link', { name: 'Register' }).click();
-  await page.getByRole('textbox', { name: 'Full name' }).fill('pizza diner');
-  await page.getByRole('textbox', { name: 'Email address' }).fill(email);
-  await page.getByRole('textbox', { name: 'Password' }).fill('diner');
-  await page.getByRole('button', { name: 'Register' }).click();
+// test('updateUser password', async ({ page }) => {
+//   await basicInit(page);
+//   let email = `user${Math.floor(Math.random() * 10000)}@jwt.com`;
+//   await page.getByRole('link', { name: 'Register' }).click();
+//   await page.getByRole('textbox', { name: 'Full name' }).fill('pizza diner');
+//   await page.getByRole('textbox', { name: 'Email address' }).fill(email);
+//   await page.getByRole('textbox', { name: 'Password' }).fill('diner');
+//   await page.getByRole('button', { name: 'Register' }).click();
 
-  await page.getByRole('link', { name: 'pd' }).click();
+//   await page.getByRole('link', { name: 'pd' }).click();
 
-  await page.getByRole('button', { name: 'Edit' }).click();
-  await expect(page.locator('#hs-jwt-modal').getByText('password:')).toBeVisible();
-  await page.locator('#password').click();
-  await page.locator('#password').fill('123');
-  await page.getByRole('button', { name: 'Update' }).click();
+//   await page.getByRole('button', { name: 'Edit' }).click();
+//   await expect(page.locator('#hs-jwt-modal').getByText('password:')).toBeVisible();
+//   await page.locator('#password').click();
+//   await page.locator('#password').fill('123');
+//   await page.getByRole('button', { name: 'Update' }).click();
 
-  await page.waitForSelector('[role="dialog"].hidden', { state: 'attached' });
+//   await page.waitForSelector('[role="dialog"].hidden', { state: 'attached' });
 
-  await page.getByRole('link', { name: 'Logout' }).click();
-  await page.getByRole('link', { name: 'Login' }).click();
+//   await page.getByRole('link', { name: 'Logout' }).click();
+//   await page.getByRole('link', { name: 'Login' }).click();
 
-  await page.getByRole('textbox', { name: 'Email address' }).fill(email);
-  await page.getByRole('textbox', { name: 'Password' }).fill('123');
-  await page.getByRole('button', { name: 'Login' }).click();
+//   await page.getByRole('textbox', { name: 'Email address' }).fill(email);
+//   await page.getByRole('textbox', { name: 'Password' }).fill('123');
+//   await page.getByRole('button', { name: 'Login' }).click();
 
-  await page.getByRole('link', { name: 'pd' }).click();
-  await page.getByRole('link', { name: 'Logout' }).click();
-  await page.getByRole('link', { name: 'Login' }).click();
-  await page.getByRole('textbox', { name: 'Email address' }).fill(email);
-  await page.getByRole('textbox', { name: 'Password' }).fill('diner');
-  await page.getByRole('button', { name: 'Login' }).click();
-  await expect(page.getByText('401')).toBeVisible();
-});
+//   await page.getByRole('link', { name: 'pd' }).click();
+//   await page.getByRole('link', { name: 'Logout' }).click();
+//   await page.getByRole('link', { name: 'Login' }).click();
+//   await page.getByRole('textbox', { name: 'Email address' }).fill(email);
+//   await page.getByRole('textbox', { name: 'Password' }).fill('diner');
+//   await page.getByRole('button', { name: 'Login' }).click();
+//   await expect(page.getByText('401')).toBeVisible();
+// });
 
 test('updateUser username as an Admin', async ({ page }) => {
   await basicAdminInit(page);

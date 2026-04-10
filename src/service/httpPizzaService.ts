@@ -70,10 +70,32 @@ class HttpPizzaService implements PizzaService {
     return Promise.resolve(result);
   }
 
-  async updateUser(updatedUser: User): Promise<User> {
-    const { user, token } = await this.callEndpoint(`/api/user/${updatedUser.id}`, 'PUT', updatedUser);
-    localStorage.setItem('token', token);
-    return Promise.resolve(user);
+  // async updateUser(updatedUser: User): Promise<User> {
+  //   const { user, token } = await this.callEndpoint(`/api/user/${updatedUser.id}`, 'PUT', updatedUser);
+  //   localStorage.setItem('token', token);
+  //   return Promise.resolve(user);
+  // }
+  async updateUser(
+    user: User & { newPassword?: string; currentPassword?: string }
+  ): Promise<User> {
+    const payload = {
+      name: user.name,
+      email: user.email,
+      newPassword: user.newPassword,
+      currentPassword: user.currentPassword,
+    };
+
+    const { user: updatedUser, token } = await this.callEndpoint(
+      `/api/user/${user.id}`,
+      'PUT',
+      payload
+    );
+
+    if (token) {
+      localStorage.setItem('token', token);
+    }
+
+    return updatedUser;
   }
 
   async getMenu(): Promise<Menu> {

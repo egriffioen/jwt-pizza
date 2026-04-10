@@ -15,8 +15,11 @@ interface Props {
 export default function DinerDashboard(props: Props) {
   const nameRef = React.useRef<HTMLInputElement>(null);
   const emailRef = React.useRef<HTMLInputElement>(null);
-  const passwordRef = React.useRef<HTMLInputElement>(null);
+  //const passwordRef = React.useRef<HTMLInputElement>(null);
+  const currentPasswordRef = React.useRef<HTMLInputElement>(null);
+  const newPasswordRef = React.useRef<HTMLInputElement>(null);
   const user = props.user || ({} as User);
+  const [message, setMessage] = React.useState('');
   const [orders, setOrders] = React.useState<Order[]>([]);
 
   React.useEffect(() => {
@@ -29,20 +32,30 @@ export default function DinerDashboard(props: Props) {
   }, [user]);
 
   async function updateUser() {
-    let updatedUser: User = {
+    let updatedUser: any = {
       id: user.id,
       name: nameRef.current?.value,
       email: emailRef.current?.value,
-      password: passwordRef.current?.value || undefined,
+      newPassword: newPasswordRef.current?.value || undefined,
+      currentPassword: currentPasswordRef.current?.value || undefined,
       roles: user.roles,
     };
 
-    await pizzaService.updateUser(updatedUser);
-
-    props.setUser(updatedUser);
+    try {
+      await pizzaService.updateUser(updatedUser);
+  
+      props.setUser(updatedUser);
+    }
+    catch(error) {
+      displayMessage(JSON.stringify(error));
+    }
     setTimeout(() => {
       HSOverlay.close(document.getElementById('hs-jwt-modal')!);
     }, 100);
+  }
+
+  function displayMessage(msg: string) {
+    setMessage(msg);
   }
 
   function formatRole(role: { role: Role; objectId?: string }) {
@@ -55,6 +68,7 @@ export default function DinerDashboard(props: Props) {
 
   return (
     <View title="Your pizza kitchen">
+      <div className="h-4 text-red-200 font-normal">{message}</div>
       <div className="text-start py-8 px-4 sm:px-6 lg:px-8">
         <div className="hs-tooltip inline-block">
           <img className="hs-tooltip-toggle relative inline-block size-[96px] rounded-full ring-2 ring-white hover:z-10" src="https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=facearea&facepad=2&w=300&h=300&q=80" alt="Employee stock photo" />
@@ -134,13 +148,25 @@ export default function DinerDashboard(props: Props) {
               </button>
             </div>
             <div className="p-4 overflow-y-scroll max-h-52">
+              
               <div className="my-4 text-lg text-start grid grid-cols-5 gap-2 items-center">
                 <div className="font-semibold">name:</div>
                 <input type="text" className="col-span-4 border border-gray-300 rounded-md p-1" defaultValue={user.name} ref={nameRef} />
                 <div className="font-semibold">email:</div>
                 <input type="email" className="col-span-4 border border-gray-300 rounded-md p-1" defaultValue={user.email} ref={emailRef} />
-                <div className="font-semibold">password:</div>
-                <input id="password" type="text" className="col-span-4 border border-gray-300 rounded-md p-1" defaultValue="" ref={passwordRef} />
+                <div className="font-semibold">current password:</div>
+                <input
+                  type="password"
+                  className="col-span-4 border border-gray-300 rounded-md p-1"
+                  ref={currentPasswordRef}
+                />
+
+                <div className="font-semibold">new password:</div>
+                <input
+                  type="password"
+                  className="col-span-4 border border-gray-300 rounded-md p-1"
+                  ref={newPasswordRef}
+                />
               </div>
             </div>
             <div className="flex justify-end items-center gap-x-2 py-3 px-4 border-t  bg-slate-200 rounded-b-xl">
