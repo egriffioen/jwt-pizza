@@ -60,7 +60,7 @@
 | Classification | A03:2021 - Injection |
 | Severity       | 3 |
 | Description    | The `PUT /api/user/:userId` endpoint passes the `name` and `email` fields directly into a SQL query via string concatenation: ``UPDATE user SET name='${name}' WHERE id=${userId}``. By sending a crafted name like `test', email='hacked@evil.com' WHERE id=1; -- `, an attacker can modify any user's data including the admin account. The same vulnerability exists for the email field. Combined with the ability to reset a password, this allows full account takeover. |
-| Images         | ![SQL injection in update](sqlInjection.png) |
+| Images         | `curl -X PUT https://pizza-service.escapethebuntrix.com/api/user/8 -H "Authorization: Bearer <token>" -d '{"name":"test', email='hacked@evil.com' WHERE id=1; -- "}'` — The injected SQL payload was concatenated directly into the query: `UPDATE user SET name='test', email='hacked@evil.com' WHERE id=1; -- ' WHERE id=8`, allowing modification of any user's data including the admin account. |
 | Corrections    | Replaced string concatenation with parameterized queries using `?` placeholders for all user-supplied values. |
 
 #### Attack 5: Sensitive Data Exposure via /api/docs and Error Stack Traces
@@ -337,8 +337,6 @@
 
 ## Combined Summary of Learnings
 
-_[Write this section jointly with your partner after completing all attacks]_
-
 ### Key Takeaways
 
 1. **Never hardcode secrets in source code.** The JWT secret, API keys, and database credentials were all committed to the repository. Anyone with access to the fork can forge tokens and compromise the entire system. Environment variables or a secrets manager should always be used.
@@ -366,5 +364,3 @@ _[Write this section jointly with your partner after completing all attacks]_
 11. **Default credentials are easy to forget.** While default admin login info is convenient, it allows anyone who knows the defaults to access the site. It's an easy fix but also easy to overlook after deployment.
 
 12. **Unique identifiers must be enforced.** Users must have unique emails so that account lookups are unambiguous. Without this check, changing your email to someone else's grants access to their account, bypassing authentication entirely.
-peerTest.md
-Displaying peerTest.md.
